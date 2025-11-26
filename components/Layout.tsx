@@ -13,8 +13,8 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ user, setUser, children }) => {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    clearCurrentSession();
+  const handleLogout = async () => {
+    await clearCurrentSession();
     setUser(null);
     navigate('/login');
   };

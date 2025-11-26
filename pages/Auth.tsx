@@ -12,30 +12,48 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     if (!email || !password) {
       setError('Please fill in all fields');
+      setLoading(false);
       return;
     }
 
     if (!isLogin && !name) {
       setError('Please enter your name');
+      setLoading(false);
       return;
     }
 
-    const user: User = {
-      id: Date.now().toString(),
-      name: isLogin ? email.split('@')[0] : name,
-      email,
-      createdAt: Date.now(),
-    };
+    try {
+      const user: User = {
+        id: '', // Will be set by Supabase auth
+        name: isLogin ? email.split('@')[0] : name,
+        email,
+        createdAt: Date.now(),
+      };
 
-    setCurrentSession(user);
-    onLogin(user);
+      await setCurrentSession(user, password, !isLogin);
+
+      // Get the authenticated user's ID from Supabase
+      const { supabase } = await import('../services/supabaseClient');
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+
+      if (authUser) {
+        user.id = authUser.id;
+        onLogin(user);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Authentication failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -84,9 +102,10 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
 
           <button
             type="submit"
-            className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition"
+            disabled={loading}
+            className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLogin ? 'Login' : 'Sign Up'}
+            {loading ? 'Processing...' : (isLogin ? 'Login' : 'Sign Up')}
           </button>
         </form>
 

@@ -17,11 +17,18 @@ const App: React.FC = () => {
 
   // Restore session
   useEffect(() => {
-    const session = getCurrentSession();
-    if (session) {
-      setUser(session);
-    }
-    setLoading(false);
+    (async () => {
+      try {
+        const session = await getCurrentSession();
+        if (session) {
+          setUser(session);
+        }
+      } catch (error) {
+        console.error('Failed to restore session:', error);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
   // Fetch transactions when user logs in
